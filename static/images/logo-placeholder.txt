@@ -1,0 +1,2 @@
+<!-- Placeholder file - Replace with actual logo image -->
+<!-- The SmartShop logo should be placed at: static/images/logo.png -->

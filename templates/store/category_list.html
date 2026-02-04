@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if current_category %}{{ current_category.name }} - SmartShop{% else %}All Products - SmartShop{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar with Categories -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> Categories</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'store:category_list' %}" 
+                       class="list-group-item list-group-item-action {% if not current_category %}active{% endif %}">
+                        All Products
+                    </a>
+                    {% for category in categories %}
+                    <a href="{% url 'store:category_detail' category.slug %}" 
+                       class="list-group-item list-group-item-action {% if current_category.id == category.id %}active{% endif %}">
+                        {{ category.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div class="col-lg-9">
+            <!-- Header and Sort Options -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    {% if current_category %}
+                        {{ current_category.name }}
+                    {% elif search_query %}
+                        Search Results for "{{ search_query }}"
+                    {% else %}
+                        All Products
+                    {% endif %}
+                </h2>
+                
+                <!-- Sort Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown">
+                        <i class="bi bi-sort-down"></i> Sort By
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item {% if sort_by == 'popular' %}active{% endif %}" 
+                               href="?sort=popular{% if current_category %}&category={{ current_category.slug }}{% endif %}">Popular</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'latest' %}active{% endif %}" 
+                               href="?sort=latest{% if current_category %}&category={{ current_category.slug }}{% endif %}">Latest</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'top_sales' %}active{% endif %}" 
+                               href="?sort=top_sales{% if current_category %}&category={{ current_category.slug }}{% endif %}">Top Sales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if sort_by == 'price_low_high' %}active{% endif %}" 
+                               href="?sort=price_low_high{% if current_category %}&category={{ current_category.slug }}{% endif %}">Price: Low to High</a></li>
+                        <li><a class="dropdown-item {% if sort_by == 'price_high_low' %}active{% endif %}" 
+                               href="?sort=price_high_low{% if current_category %}&category={{ current_category.slug }}{% endif %}">Price: High to Low</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            {% if products %}
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-sm-6 col-md-4">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow product-card">
+                        <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                            {% if product.images.first %}
+                            <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="card-body">
+                                <h6 class="card-title text-dark" style="min-height: 40px;">{{ product.name|truncatewords:8 }}</h6>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-primary fw-bold fs-5">${{ product.price }}</span>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ product.units_sold }} sold</small>
+                                    {% if product.average_rating > 0 %}
+                                    <div class="text-warning small">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= product.average_rating %}
+                                            <i class="bi bi-star-fill"></i>
+                                            {% else %}
+                                            <i class="bi bi-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">No products found</h4>
+                <p class="text-muted">Try adjusting your search or filters</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.product-card {
+    cursor: pointer;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - SmartShop{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Welcome to SmartShop</h1>
+                <p class="lead">Discover amazing products across all categories at unbeatable prices!</p>
+                <a href="{% url 'store:category_list' %}" class="btn btn-primary btn-lg">
+                    Shop Now <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="col-lg-6">
+                <img src="{% static 'images/hero-image.png' %}" alt="Shopping" class="img-fluid" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">CATEGORIES</h2>
+            <p class="text-muted">Browse our wide range of product categories</p>
+        </div>
+        
+        <div class="category-carousel-container position-relative">
+            <!-- Previous Button -->
+            <button class="carousel-nav-btn carousel-nav-prev" id="categoryPrevBtn">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            
+            <!-- Categories Grid -->
+            <div class="category-carousel-wrapper">
+                <div class="category-carousel-track" id="categoryTrack">
+                    {% for category in categories %}
+                    <div class="category-item">
+                        <a href="{% url 'store:category_detail' category.slug %}" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm hover-shadow text-center category-card">
+                                <div class="card-body p-3">
+                                    {% if category.icon %}
+                                    <img src="{{ category.icon.url }}" class="category-icon mx-auto mb-2" alt="{{ category.name }}">
+                                    {% else %}
+                                    <div class="category-icon-placeholder mx-auto mb-2">
+                                        <i class="bi bi-grid text-primary"></i>
+                                    </div>
+                                    {% endif %}
+                                    <h6 class="category-title text-dark mb-0">{{ category.name }}</h6>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Next Button -->
+            <button class="carousel-nav-btn carousel-nav-next" id="categoryNextBtn">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Recommended Products (AI-Powered) -->
+{% if recommended_products %}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">
+                <i class="bi bi-stars text-warning"></i> Recommended For You
+            </h2>
+            <p class="text-muted">Personalized recommendations based on shopping trends</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product, relevance_score in recommended_products %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow product-card position-relative">
+                    <!-- AI Badge -->
+                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 1;">
+                        <span class="badge" style="background: rgba(0, 0, 0, 0.5); color: white; padding: 0.4rem 0.6rem;">
+                            <i class="bi bi-cpu"></i> AI Pick
+                        </span>
+                    </div>
+                    
+                    <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                        {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title text-dark" style="min-height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ product.name }}</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-primary fw-bold">${{ product.price }}</span>
+                                <small class="text-success">
+                                    <i class="bi bi-graph-up-arrow"></i> {{ relevance_score|floatformat:0 }}% match
+                                </small>
+                            </div>
+                            {% if product.average_rating > 0 %}
+                            <div class="text-warning small">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= product.average_rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="text-muted">({{ product.review_count }})</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Featured Products -->
+{% if featured_products %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">Featured Products</h2>
+            <p class="text-muted">Top selling items this week</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow product-card">
+                    <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                        {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title text-dark text-truncate">{{ product.name }}</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-primary fw-bold">${{ product.price }}</span>
+                                <small class="text-muted">{{ product.units_sold }} sold</small>
+                            </div>
+                            {% if product.average_rating > 0 %}
+                            <div class="text-warning small">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= product.average_rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="text-muted">({{ product.review_count }})</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18) !important;
+}
+
+.product-card {
+    cursor: pointer;
+}
+
+/* Category Carousel Styles */
+.category-carousel-container {
+    position: relative;
+    padding: 0 50px;
+}
+
+.category-carousel-wrapper {
+    overflow: hidden;
+    width: 100%;
+    padding-bottom: 0.5rem; /* Add padding to prevent shadow clipping */
+}
+
+.category-carousel-track {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    transition: transform 0.3s ease;
+    width: max-content;
+}
+
+.category-item {
+    width: 140px;
+    flex: 0 0 140px;
+}
+
+.category-card {
+    cursor: pointer;
+    height: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important; /* Add subtle border */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; /* Ensure consistent shadow */
+}
+
+.category-icon {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.category-icon-placeholder {
+    width: 80px;
+    height: 80px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.category-icon-placeholder i {
+    font-size: 2rem;
+}
+
+.category-title {
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.carousel-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-nav-btn:hover {
+    background: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.carousel-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.carousel-nav-prev {
+    left: 0;
+}
+
+.carousel-nav-next {
+    right: 0;
+}
+
+.carousel-nav-btn i {
+    font-size: 1.2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .category-item {
+        width: 130px;
+        flex: 0 0 130px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .category-item {
+        width: 120px;
+        flex: 0 0 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .category-carousel-container {
+        padding: 0 40px;
+    }
+    .category-item {
+        width: 110px;
+        flex: 0 0 110px;
+    }
+    .carousel-nav-btn {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+@media (max-width: 576px) {
+    .category-carousel-container {
+        padding: 0 35px;
+    }
+    .category-item {
+        width: 100px;
+        flex: 0 0 100px;
+    }
+    .category-icon,
+    .category-icon-placeholder {
+        width: 60px;
+        height: 60px;
+    }
+    .category-title {
+        font-size: 0.75rem;
+    }
+    .carousel-nav-btn {
+        width: 30px;
+        height: 30px;
+    }
+    .carousel-nav-btn i {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const track = document.getElementById('categoryTrack');
+    const prevBtn = document.getElementById('categoryPrevBtn');
+    const nextBtn = document.getElementById('categoryNextBtn');
+    
+    if (!track || !prevBtn || !nextBtn) return;
+    
+    const items = track.querySelectorAll('.category-item');
+    const totalItems = items.length;
+    
+    // Calculate items visible per page (2 rows)
+    function getItemsPerPage() {
+        const containerWidth = track.parentElement.offsetWidth;
+        const gap = 16; // 1rem gap in pixels
+        let itemWidth;
+        
+        if (window.innerWidth <= 576) {
+            itemWidth = 100;
+        } else if (window.innerWidth <= 768) {
+            itemWidth = 110;
+        } else if (window.innerWidth <= 1200) {
+            itemWidth = 120;
+        } else if (window.innerWidth <= 1400) {
+            itemWidth = 130;
+        } else {
+            itemWidth = 140;
+        }
+        
+        // Calculate how many complete items (columns) fit in the container width
+        const itemsPerRow = Math.floor((containerWidth + gap) / (itemWidth + gap));
+        return itemsPerRow * 2; // 2 rows
+    }
+    
+    let currentPage = 0;
+    let itemsPerPage = getItemsPerPage();
+    let itemsPerRow = itemsPerPage / 2;
+    
+    // Set track height to show exactly 2 rows
+    function setTrackDimensions() {
+        if (items.length > 0) {
+            const itemWidth = items[0].offsetWidth;
+            const gap = 16;
+            const itemHeight = items[0].offsetHeight;
+            
+            // Calculate total columns needed
+            const totalColumns = Math.ceil(totalItems / 2);
+            const trackWidth = totalColumns * (itemWidth + gap) - gap;
+            
+            track.style.width = trackWidth + 'px';
+            track.style.height = (itemHeight * 2 + gap) + 'px';
+        }
+    }
+    
+    function updateCarousel() {
+        itemsPerRow = itemsPerPage / 2;
+        const offset = currentPage * itemsPerRow;
+        
+        // Get actual item width from DOM
+        const itemWidth = items[0] ? items[0].offsetWidth : 140;
+        const gap = 16; // 1rem gap
+        const translateX = -(offset * (itemWidth + gap));
+        
+        track.style.transform = `translateX(${translateX}px)`;
+        
+        // Update button states
+        prevBtn.disabled = currentPage === 0;
+        
+        // Calculate total pages
+        const totalPages = Math.ceil(totalItems / itemsPerRow);
+        nextBtn.disabled = currentPage >= totalPages - 1;
+    }
+    
+    prevBtn.addEventListener('click', function() {
+        if (currentPage > 0) {
+            currentPage--;
+            updateCarousel();
+        }
+    });
+    
+    nextBtn.addEventListener('click', function() {
+        const itemsPerRow = itemsPerPage / 2;
+        const totalPages = Math.ceil(totalItems / itemsPerRow);
+        if (currentPage < totalPages - 1) {
+            currentPage++;
+            updateCarousel();
+        }
+    });
+    
+    // Handle window resize
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            const newItemsPerPage = getItemsPerPage();
+            if (newItemsPerPage !== itemsPerPage) {
+                itemsPerPage = newItemsPerPage;
+                
+                // Adjust current page to ensure we don't show partial view
+                const itemsPerRow = itemsPerPage / 2;
+                const totalPages = Math.ceil(totalItems / itemsPerRow);
+                if (currentPage >= totalPages) {
+                    currentPage = Math.max(0, totalPages - 1);
+                }
+                
+                setTrackDimensions();
+                updateCarousel();
+            }
+        }, 250);
+    });
+    
+    // Initial update
+    setTrackDimensions();
+    updateCarousel();
+});
+</script>
+{% endblock %}

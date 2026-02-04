@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Checkout - SmartShop{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4"><i class="bi bi-credit-card"></i> Checkout</h2>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {{ form.full_name.label_tag }}
+                                {{ form.full_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label_tag }}
+                                {{ form.email }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone.label_tag }}
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.address_line1.label_tag }}
+                                {{ form.address_line1 }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.address_line2.label_tag }}
+                                {{ form.address_line2 }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.city.label_tag }}
+                                {{ form.city }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.state.label_tag }}
+                                {{ form.state }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.postal_code.label_tag }}
+                                {{ form.postal_code }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.country.label_tag }}
+                                {{ form.country }}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.notes.label_tag }}
+                                {{ form.notes }}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> This is a demo checkout. All orders are automatically marked as paid.
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-check-circle"></i> Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small>{{ item.product.name|truncatewords:5 }}</small>
+                            <br>
+                            <small class="text-muted">Qty: {{ item.quantity }}</small>
+                        </div>
+                        <small class="fw-bold">${{ item.subtotal }}</small>
+                    </div>
+                    {% endfor %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>${{ cart.total_price }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping</span>
+                        <span class="text-success">FREE</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total</strong>
+                        <strong class="text-primary fs-4">${{ cart.total_price }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
