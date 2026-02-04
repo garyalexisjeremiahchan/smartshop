@@ -33,17 +33,26 @@
         <div class="col-lg-9">
             <!-- Header and Sort Options -->
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0">
-                    {% if current_category %}
-                        {{ current_category.name }}
-                    {% elif search_query %}
-                        Search Results for "{{ search_query }}"
-                    {% else %}
-                        All Products
+                <div>
+                    <h2 class="mb-0">
+                        {% if current_category %}
+                            {{ current_category.name }}
+                        {% elif search_query %}
+                            Search Results for "{{ search_query }}"
+                        {% else %}
+                            All Products
+                        {% endif %}
+                    </h2>
+                    {% if search_query and ai_results %}
+                    <small class="text-muted">
+                        <i class="bi bi-stars text-primary"></i> 
+                        AI-powered results ranked by relevance
+                    </small>
                     {% endif %}
-                </h2>
+                </div>
                 
-                <!-- Sort Dropdown -->
+                <!-- Sort Dropdown (hidden during AI search) -->
+                {% if not search_query %}
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown">
                         <i class="bi bi-sort-down"></i> Sort By
@@ -62,49 +71,112 @@
                                href="?sort=price_high_low{% if current_category %}&category={{ current_category.slug }}{% endif %}">Price: High to Low</a></li>
                     </ul>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Products Grid -->
             {% if products %}
             <div class="row g-4">
-                {% for product in products %}
-                <div class="col-sm-6 col-md-4">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow product-card">
-                        <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
-                            {% if product.images.first %}
-                            <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
-                            {% else %}
-                            <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                {% if search_query and ai_results %}
+                    {# AI Search Results with Relevance Scores #}
+                    {% for product, relevance_score, reason in ai_results %}
+                    <div class="col-sm-6 col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow product-card position-relative">
+                            <!-- AI Badge -->
+                            <div class="position-absolute top-0 end-0 m-2" style="z-index: 1;">
+                                <span class="badge" style="background: rgba(0, 0, 0, 0.5); color: white; padding: 0.4rem 0.6rem;">
+                                    <i class="bi bi-stars"></i> AI Match
+                                </span>
                             </div>
-                            {% endif %}
                             
-                            <div class="card-body">
-                                <h6 class="card-title text-dark" style="min-height: 40px;">{{ product.name|truncatewords:8 }}</h6>
-                                
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="text-primary fw-bold fs-5">${{ product.price }}</span>
+                            <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                                {% if product.images.first %}
+                                <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
                                 </div>
+                                {% endif %}
                                 
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">{{ product.units_sold }} sold</small>
-                                    {% if product.average_rating > 0 %}
-                                    <div class="text-warning small">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= product.average_rating %}
-                                            <i class="bi bi-star-fill"></i>
-                                            {% else %}
-                                            <i class="bi bi-star"></i>
-                                            {% endif %}
-                                        {% endfor %}
+                                <div class="card-body">
+                                    <h6 class="card-title text-dark" style="min-height: 40px;">{{ product.name|truncatewords:8 }}</h6>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-primary fw-bold fs-5">${{ product.price }}</span>
+                                        <small class="text-success">
+                                            <i class="bi bi-graph-up-arrow"></i> {{ relevance_score|floatformat:0 }}% match
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- AI Reason (if available) -->
+                                    {% if reason %}
+                                    <div class="mb-2">
+                                        <small class="text-muted fst-italic">
+                                            <i class="bi bi-lightbulb"></i> {{ reason|truncatewords:12 }}
+                                        </small>
                                     </div>
                                     {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ product.units_sold }} sold</small>
+                                        {% if product.average_rating > 0 %}
+                                        <div class="text-warning small">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= product.average_rating %}
+                                                <i class="bi bi-star-fill"></i>
+                                                {% else %}
+                                                <i class="bi bi-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    {# Regular Product Listing #}
+                    {% for product in products %}
+                    <div class="col-sm-6 col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow product-card">
+                            <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                                {% if product.images.first %}
+                                <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="card-body">
+                                    <h6 class="card-title text-dark" style="min-height: 40px;">{{ product.name|truncatewords:8 }}</h6>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-primary fw-bold fs-5">${{ product.price }}</span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ product.units_sold }} sold</small>
+                                        {% if product.average_rating > 0 %}
+                                        <div class="text-warning small">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= product.average_rating %}
+                                                <i class="bi bi-star-fill"></i>
+                                                {% else %}
+                                                <i class="bi bi-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
             </div>
             {% else %}
             <div class="text-center py-5">

@@ -28,16 +28,203 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Search form enhancement
-    const searchForm = document.querySelector('form[action*="categories"]');
-    if (searchForm) {
-        const searchInput = searchForm.querySelector('input[name="search"]');
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                // You can add live search functionality here
-            });
+    // AI-Powered Search with Autocomplete and Debounce
+    const searchInput = document.getElementById('searchInput');
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+    const autocompleteList = document.getElementById('autocompleteList');
+    const searchForm = document.getElementById('searchForm');
+    
+    // Debug: Check if elements exist
+    if (!searchInput) {
+        console.warn('Search input element not found');
+    }
+    if (!autocompleteDropdown) {
+        console.warn('Autocomplete dropdown element not found');
+    }
+    if (!autocompleteList) {
+        console.warn('Autocomplete list element not found');
+    }
+    if (!searchForm) {
+        console.warn('Search form element not found');
+    }
+    
+    let debounceTimer;
+    let currentFocus = -1;
+    
+    // Debounce function - delays execution until user stops typing
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+    
+    // Fetch autocomplete suggestions from API
+    async function fetchAutocomplete(query) {
+        try {
+            // Add loading indicator
+            searchInput.classList.add('search-loading');
+            
+            const response = await fetch(`/api/autocomplete/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            // Remove loading indicator
+            searchInput.classList.remove('search-loading');
+            
+            return data.suggestions || [];
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+            searchInput.classList.remove('search-loading');
+            return [];
         }
     }
+    
+    // Display autocomplete suggestions
+    function displayAutocomplete(suggestions) {
+        autocompleteList.innerHTML = '';
+        
+        if (suggestions.length === 0) {
+            autocompleteDropdown.style.display = 'none';
+            return;
+        }
+        
+        suggestions.forEach((suggestion, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <i class="bi bi-search me-2"></i>
+                <span>${highlightMatch(suggestion, searchInput.value)}</span>
+            `;
+            li.setAttribute('data-value', suggestion);
+            li.setAttribute('data-index', index);
+            
+            // Click handler
+            li.addEventListener('click', function() {
+                selectSuggestion(suggestion);
+            });
+            
+            autocompleteList.appendChild(li);
+        });
+        
+        autocompleteDropdown.style.display = 'block';
+        currentFocus = -1;
+    }
+    
+    // Highlight matching text in suggestions
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        
+        const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+        return text.replace(regex, '<strong>$1</strong>');
+    }
+    
+    // Escape special regex characters
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
+    // Select a suggestion
+    function selectSuggestion(value) {
+        searchInput.value = value;
+        autocompleteDropdown.style.display = 'none';
+        searchForm.submit();
+    }
+    
+    // Navigate suggestions with keyboard
+    function navigateSuggestions(direction) {
+        const items = autocompleteList.querySelectorAll('li');
+        if (items.length === 0) return;
+        
+        // Remove active class from all
+        items.forEach(item => item.classList.remove('active'));
+        
+        // Update focus
+        currentFocus += direction;
+        
+        // Loop around
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        
+        // Add active class
+        items[currentFocus].classList.add('active');
+        items[currentFocus].scrollIntoView({ block: 'nearest' });
+    }
+    
+    // Handle search input events
+    if (searchInput && autocompleteDropdown && autocompleteList && searchForm) {
+        console.log('AI Search autocomplete initialized successfully');
+        
+        // Input event with debounce
+        searchInput.addEventListener('input', debounce(async function(e) {
+            const query = e.target.value.trim();
+            console.log('Search input:', query);
+            
+            if (query.length >= 2) {
+                console.log('Fetching autocomplete for:', query);
+                const suggestions = await fetchAutocomplete(query);
+                console.log('Received suggestions:', suggestions);
+                displayAutocomplete(suggestions);
+            } else if (query.length === 0) {
+                // Show trending searches when input is empty
+                const suggestions = await fetchAutocomplete('');
+                displayAutocomplete(suggestions);
+            } else {
+                autocompleteDropdown.style.display = 'none';
+            }
+        }, 300)); // 300ms debounce delay
+        
+        // Focus event - show trending if empty
+        searchInput.addEventListener('focus', async function(e) {
+            if (!e.target.value.trim()) {
+                const suggestions = await fetchAutocomplete('');
+                displayAutocomplete(suggestions);
+            } else if (autocompleteList.children.length > 0) {
+                autocompleteDropdown.style.display = 'block';
+            }
+        });
+        
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', function(e) {
+            const items = autocompleteList.querySelectorAll('li');
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    navigateSuggestions(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    navigateSuggestions(-1);
+                    break;
+                case 'Enter':
+                    if (currentFocus > -1 && items[currentFocus]) {
+                        e.preventDefault();
+                        const value = items[currentFocus].getAttribute('data-value');
+                        selectSuggestion(value);
+                    }
+                    break;
+                case 'Escape':
+                    autocompleteDropdown.style.display = 'none';
+                    currentFocus = -1;
+                    break;
+            }
+        });
+        
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchForm.contains(e.target)) {
+                autocompleteDropdown.style.display = 'none';
+                currentFocus = -1;
+            }
+        });
+        
+        console.log('✓ All event listeners attached successfully');
+    } else {
+        console.error('AI Search autocomplete could not initialize - missing required elements');
+    }
+
+    // Search form enhancement (original code removed - using autocomplete instead)
+    // const searchForm = document.querySelector('form[action*="categories"]');
+    // ... removed old code ...
 
     // Smooth scroll to top
     const scrollToTop = document.createElement('button');

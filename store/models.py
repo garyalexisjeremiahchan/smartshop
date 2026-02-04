@@ -183,7 +183,7 @@ class Order(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-    order_number = models.CharField(max_length=20, unique=True, editable=False)
+    order_number = models.CharField(max_length=30, unique=True, editable=False)
     
     # Shipping Information
     full_name = models.CharField(max_length=200)

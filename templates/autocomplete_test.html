@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocomplete Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        #searchForm {
+            position: relative;
+            max-width: 500px;
+            margin: 50px auto;
+        }
+        
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1050;
+            margin-top: 0;
+        }
+        
+        .autocomplete-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        
+        #autocompleteList li {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        #autocompleteList li:hover,
+        #autocompleteList li.active {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mt-5">Autocomplete Test Page</h1>
+        <p class="text-center text-muted">Type "lap" to test autocomplete</p>
+        
+        <form class="d-flex mx-auto my-2 my-lg-0 position-relative" style="max-width: 500px;" id="searchForm">
+            <div class="input-group">
+                <input 
+                    class="form-control" 
+                    type="search" 
+                    placeholder="Search products with AI..." 
+                    name="search" 
+                    id="searchInput"
+                    autocomplete="off">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+            <div id="autocompleteDropdown" class="autocomplete-dropdown" style="display: none;">
+                <div class="autocomplete-header text-muted small px-3 py-2">
+                    <i class="bi bi-clock-history me-1"></i> Suggestions
+                </div>
+                <ul id="autocompleteList" class="list-unstyled mb-0"></ul>
+            </div>
+        </form>
+        
+        <div class="mt-5 p-4 border rounded" style="max-width: 800px; margin: 0 auto;">
+            <h5>Debug Console</h5>
+            <div id="debugConsole" style="font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 15px; border-radius: 5px; max-height: 300px; overflow-y: auto;">
+                Waiting for input...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logger
+        function debugLog(message) {
+            const debugConsole = document.getElementById('debugConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            debugConsole.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+            console.log(message);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('✓ Page loaded, DOMContentLoaded fired');
+            
+            const searchInput = document.getElementById('searchInput');
+            const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+            const autocompleteList = document.getElementById('autocompleteList');
+            const searchForm = document.getElementById('searchForm');
+            
+            debugLog(`✓ searchInput found: ${!!searchInput}`);
+            debugLog(`✓ autocompleteDropdown found: ${!!autocompleteDropdown}`);
+            debugLog(`✓ autocompleteList found: ${!!autocompleteList}`);
+            debugLog(`✓ searchForm found: ${!!searchForm}`);
+            
+            let debounceTimer;
+            
+            function debounce(func, delay) {
+                return function(...args) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+            
+            async function fetchAutocomplete(query) {
+                try {
+                    debugLog(`→ Fetching suggestions for: "${query}"`);
+                    const response = await fetch(`/api/autocomplete/?q=${encodeURIComponent(query)}`);
+                    debugLog(`← Response status: ${response.status}`);
+                    
+                    const data = await response.json();
+                    debugLog(`← Received ${data.suggestions.length} suggestions`);
+                    
+                    return data.suggestions || [];
+                } catch (error) {
+                    debugLog(`✗ Error: ${error.message}`);
+                    console.error('Autocomplete error:', error);
+                    return [];
+                }
+            }
+            
+            function displayAutocomplete(suggestions) {
+                debugLog(`Displaying ${suggestions.length} suggestions`);
+                autocompleteList.innerHTML = '';
+                
+                if (suggestions.length === 0) {
+                    autocompleteDropdown.style.display = 'none';
+                    debugLog('Dropdown hidden (no suggestions)');
+                    return;
+                }
+                
+                suggestions.forEach((suggestion, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <i class="bi bi-search me-2"></i>
+                        <span>${suggestion}</span>
+                    `;
+                    li.setAttribute('data-value', suggestion);
+                    
+                    li.addEventListener('click', function() {
+                        searchInput.value = suggestion;
+                        autocompleteDropdown.style.display = 'none';
+                        debugLog(`Selected: "${suggestion}"`);
+                    });
+                    
+                    autocompleteList.appendChild(li);
+                });
+                
+                autocompleteDropdown.style.display = 'block';
+                debugLog('✓ Dropdown shown');
+            }
+            
+            if (searchInput && autocompleteDropdown && autocompleteList && searchForm) {
+                debugLog('✓ All elements ready, attaching event listeners');
+                
+                searchInput.addEventListener('input', debounce(async function(e) {
+                    const query = e.target.value.trim();
+                    debugLog(`Input event: "${query}" (length: ${query.length})`);
+                    
+                    if (query.length >= 2) {
+                        const suggestions = await fetchAutocomplete(query);
+                        displayAutocomplete(suggestions);
+                    } else if (query.length === 0) {
+                        const suggestions = await fetchAutocomplete('');
+                        displayAutocomplete(suggestions);
+                    } else {
+                        autocompleteDropdown.style.display = 'none';
+                        debugLog('Query too short, dropdown hidden');
+                    }
+                }, 300));
+                
+                debugLog('✓ Event listener attached with 300ms debounce');
+                
+                searchInput.addEventListener('focus', function() {
+                    debugLog('Input focused');
+                    if (searchInput.value.trim().length >= 2) {
+                        autocompleteDropdown.style.display = 'block';
+                    }
+                });
+                
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    debugLog(`Form submitted with query: "${searchInput.value}"`);
+                    alert(`Searching for: ${searchInput.value}`);
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!searchForm.contains(e.target)) {
+                        autocompleteDropdown.style.display = 'none';
+                    }
+                });
+                
+                debugLog('✓ Autocomplete ready! Type "lap" to test');
+            } else {
+                debugLog('✗ ERROR: Some elements not found!');
+            }
+        });
+    </script>
+</body>
+</html>

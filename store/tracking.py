@@ -154,7 +154,7 @@ def track_order_placed(request, order):
             quantity=item.quantity,
             extra_data={
                 'order_number': order.order_number,
-                'product_price': str(item.price)
+                'product_price': str(item.product_price)
             }
         )
 

@@ -15,4 +15,7 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('order/<str:order_number>/', views.order_detail, name='order_detail'),
     path('orders/', views.order_history, name='order_history'),
+    # API endpoints for search autocomplete
+    path('api/autocomplete/', views.autocomplete_search, name='autocomplete_search'),
+    path('api/trending/', views.trending_searches, name='trending_searches'),
 ]

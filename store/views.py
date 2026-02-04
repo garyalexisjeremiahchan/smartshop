@@ -13,6 +13,7 @@ from .tracking import (
     track_order_placed, track_search, track_review_submitted
 )
 from .recommendations import get_ai_recommended_products
+from .ai_search import get_ai_search_results, get_autocomplete_suggestions, get_trending_searches
 
 
 def home(request):
@@ -53,28 +54,49 @@ def category_list(request, slug=None):
         # Track category view
         track_view_category(request, current_category)
     
-    # Search functionality
+    # AI-powered search functionality
     search_query = request.GET.get('search', '')
+    ai_results = []
     if search_query:
-        products = products.filter(
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
+        # Use AI-powered search with caching
+        user_id = request.user.id if request.user.is_authenticated else 'anonymous'
+        cache_key = f'ai_search_{user_id}_{search_query[:50]}'
+        ai_results = cache.get(cache_key)
+        
+        if ai_results is None:
+            # Cache miss - call AI search
+            ai_results = get_ai_search_results(search_query, user=request.user, limit=50)
+            # Cache for 30 minutes
+            cache.set(cache_key, ai_results, 1800)
+        
+        # Extract product IDs from AI results
+        if ai_results:
+            product_ids = [product.id for product, score, reason in ai_results]
+            # Preserve AI ranking order
+            products = Product.objects.filter(id__in=product_ids, is_active=True)
+            # Create a dictionary to maintain order
+            products_dict = {p.id: p for p in products}
+            products = [products_dict[pid] for pid in product_ids if pid in products_dict]
+        else:
+            products = []
+        
         # Track search
-        track_search(request, search_query, results_count=products.count())
+        track_search(request, search_query, results_count=len(products))
     
-    # Sorting
+    # Sorting (only apply if not using AI search results)
     sort_by = request.GET.get('sort', 'latest')
-    if sort_by == 'popular':
-        products = products.order_by('-units_sold')
-    elif sort_by == 'latest':
-        products = products.order_by('-created_at')
-    elif sort_by == 'top_sales':
-        products = products.order_by('-units_sold')
-    elif sort_by == 'price_low_high':
-        products = products.order_by('price')
-    elif sort_by == 'price_high_low':
-        products = products.order_by('-price')
+    if not search_query:
+        # Only sort when not searching (AI already ranks by relevance)
+        if sort_by == 'popular':
+            products = products.order_by('-units_sold')
+        elif sort_by == 'latest':
+            products = products.order_by('-created_at')
+        elif sort_by == 'top_sales':
+            products = products.order_by('-units_sold')
+        elif sort_by == 'price_low_high':
+            products = products.order_by('price')
+        elif sort_by == 'price_high_low':
+            products = products.order_by('-price')
     
     context = {
         'categories': categories,
@@ -82,6 +104,7 @@ def category_list(request, slug=None):
         'current_category': current_category,
         'sort_by': sort_by,
         'search_query': search_query,
+        'ai_results': ai_results if search_query else [],
     }
     return render(request, 'store/category_list.html', context)
 
@@ -335,3 +358,37 @@ def order_history(request):
         'orders': orders,
     }
     return render(request, 'store/order_history.html', context)
+
+
+def autocomplete_search(request):
+    """
+    API endpoint for search autocomplete suggestions.
+    Returns JSON array of suggested search terms.
+    """
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        # Return trending searches for empty/short queries
+        suggestions = get_trending_searches(user=request.user, limit=8)
+    else:
+        # Get autocomplete suggestions based on partial query
+        suggestions = get_autocomplete_suggestions(query, user=request.user, limit=8)
+    
+    return JsonResponse({
+        'suggestions': suggestions,
+        'query': query
+    })
+
+
+def trending_searches(request):
+    """
+    API endpoint for trending searches.
+    Returns JSON array of trending search terms based on user interactions.
+    """
+    limit = int(request.GET.get('limit', 10))
+    trending = get_trending_searches(user=request.user, limit=limit)
+    
+    return JsonResponse({
+        'trending': trending,
+        'count': len(trending)
+    })
