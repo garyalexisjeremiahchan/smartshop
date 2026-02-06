@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load star_ratings %}
 
 {% block title %}{{ product.name }} - SmartShop{% endblock %}
 
@@ -42,23 +43,16 @@
         <div class="col-lg-7">
             <h1 class="mb-3">{{ product.name }}</h1>
             
-            <!-- Rating and Sales -->
+            <!-- Sales and Rating -->
             <div class="d-flex align-items-center mb-3">
-                {% if product.average_rating > 0 %}
-                <div class="text-warning me-3">
-                    {% for i in "12345" %}
-                        {% if forloop.counter <= product.average_rating %}
-                        <i class="bi bi-star-fill"></i>
-                        {% else %}
-                        <i class="bi bi-star"></i>
-                        {% endif %}
-                    {% endfor %}
-                    <span class="text-dark ms-2">{{ product.average_rating }}</span>
-                </div>
-                {% endif %}
-                <div class="text-muted">
+                <div class="text-muted me-3">
                     <i class="bi bi-bag-check"></i> {{ product.units_sold }} sold
                 </div>
+                {% if product.average_rating > 0 %}
+                <div class="d-flex align-items-center">
+                    {% star_rating product.average_rating show_number=True %}
+                </div>
+                {% endif %}
             </div>
 
             <!-- Price -->
@@ -96,7 +90,36 @@
             <!-- Description -->
             <div class="mb-4">
                 <h5>Product Description</h5>
+                {% if product.dynamic_description %}
+                <!-- Dynamic AI-Generated Description -->
+                <div class="card border-0 bg-light mb-3">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-magic text-primary me-2"></i>
+                            <small class="text-muted fst-italic">AI-Enhanced Description</small>
+                        </div>
+                        <p class="mb-0" style="font-size: 1.05rem; line-height: 1.6;">{{ product.dynamic_description }}</p>
+                    </div>
+                </div>
+                <!-- Original Description (Collapsible) -->
+                <div class="accordion" id="originalDescriptionAccordion">
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header" id="headingOriginal">
+                            <button class="accordion-button collapsed bg-white text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOriginal" aria-expanded="false" aria-controls="collapseOriginal" style="font-size: 0.9rem; padding: 0.5rem 0;">
+                                <i class="bi bi-chevron-down me-2"></i> View Technical Details
+                            </button>
+                        </h2>
+                        <div id="collapseOriginal" class="accordion-collapse collapse" aria-labelledby="headingOriginal" data-bs-parent="#originalDescriptionAccordion">
+                            <div class="accordion-body px-0">
+                                <p class="text-muted">{{ product.description|linebreaks }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Fallback to original description if no dynamic description -->
                 <p>{{ product.description|linebreaks }}</p>
+                {% endif %}
             </div>
 
             <!-- Specifications -->
@@ -117,6 +140,82 @@
     <div class="row mt-5">
         <div class="col-12">
             <h3 class="mb-4">Customer Reviews</h3>
+            
+            <!-- AI-Generated Review Summary -->
+            {% if has_summary %}
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #ff622e 0%, #fe8447 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-stars fs-4 me-2"></i>
+                        <h5 class="mb-0">AI Review Summary</h5>
+                        <span class="badge bg-white text-dark ms-2" style="font-size: 0.7rem;">
+                            Based on {{ product.review_summary_review_count }} review{{ product.review_summary_review_count|pluralize }}
+                        </span>
+                    </div>
+                    
+                    <!-- Overall Sentiment Badge -->
+                    <div class="mb-3">
+                        {% if product.review_summary_sentiment == 'positive' %}
+                        <span class="badge" style="background: rgba(255, 255, 255, 0.3); padding: 0.5rem 1rem;">
+                            <i class="bi bi-emoji-smile"></i> Mostly Positive Feedback
+                        </span>
+                        {% elif product.review_summary_sentiment == 'negative' %}
+                        <span class="badge" style="background: rgba(255, 255, 255, 0.3); padding: 0.5rem 1rem;">
+                            <i class="bi bi-emoji-frown"></i> Mixed Feedback
+                        </span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(255, 255, 255, 0.3); padding: 0.5rem 1rem;">
+                            <i class="bi bi-emoji-neutral"></i> Neutral Feedback
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Summary Text -->
+                    <p class="mb-3" style="font-size: 1.05rem; line-height: 1.6;">{{ product.review_summary }}</p>
+                    
+                    <!-- Pros and Cons -->
+                    <div class="row">
+                        {% if product.review_summary_pros %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-black bg-opacity-10 border-0">
+                                <div class="card-body text-white">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-hand-thumbs-up-fill text-white"></i> What Customers Like
+                                    </h6>
+                                    <ul class="mb-0" style="padding-left: 1.2rem;">
+                                        {% for pro in product.review_summary_pros.splitlines %}
+                                        <li class="mb-2">{{ pro }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if product.review_summary_cons %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-black bg-opacity-10 border-0">
+                                <div class="card-body text-white">
+                                    <h6 class="mb-3">
+                                        <i class="bi bi-hand-thumbs-down-fill text-white"></i> Common Concerns
+                                    </h6>
+                                    <ul class="mb-0" style="padding-left: 1.2rem;">
+                                        {% for con in product.review_summary_cons.splitlines %}
+                                        <li class="mb-2">{{ con }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <small class="text-white-50 fst-italic">
+                        <i class="bi bi-info-circle"></i> This summary was generated by AI to help you make an informed decision
+                    </small>
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Add Review Form (Only for logged-in users) -->
             {% if user.is_authenticated %}
@@ -157,15 +256,9 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <h6 class="mb-1">{{ review.user.username }}</h6>
-                                <div class="text-warning small">
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= review.rating %}
-                                        <i class="bi bi-star-fill"></i>
-                                        {% else %}
-                                        <i class="bi bi-star"></i>
-                                        {% endif %}
-                                    {% endfor %}
+                                <h6 class="mb-1">{{ review.user.username|mask_username }}</h6>
+                                <div class="small">
+                                    {% star_rating review.rating %}
                                 </div>
                             </div>
                             <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>

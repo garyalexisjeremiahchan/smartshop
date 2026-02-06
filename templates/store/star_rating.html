@@ -1,0 +1,14 @@
+<span class="text-warning">
+    {% for star in full_stars %}
+        <i class="bi bi-star-fill"></i>
+    {% endfor %}
+    {% if half_star %}
+        <i class="bi bi-star-half"></i>
+    {% endif %}
+    {% for star in empty_stars %}
+        <i class="bi bi-star"></i>
+    {% endfor %}
+    {% if show_number %}
+        <span class="text-dark ms-1">{{ rating|floatformat:1 }}</span>
+    {% endif %}
+</span>

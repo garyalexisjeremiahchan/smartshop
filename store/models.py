@@ -49,6 +49,18 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # AI Review Summary fields
+    review_summary = models.TextField(blank=True, help_text='AI-generated summary of customer reviews')
+    review_summary_pros = models.TextField(blank=True, help_text='Pros extracted from reviews')
+    review_summary_cons = models.TextField(blank=True, help_text='Cons extracted from reviews')
+    review_summary_sentiment = models.CharField(max_length=20, blank=True, help_text='Overall sentiment: positive, neutral, or negative')
+    review_summary_generated_at = models.DateTimeField(null=True, blank=True, help_text='When the summary was last generated')
+    review_summary_review_count = models.PositiveIntegerField(default=0, help_text='Number of reviews included in the summary')
+    
+    # Dynamic Product Description fields
+    dynamic_description = models.TextField(blank=True, help_text='AI-generated engaging product description')
+    dynamic_description_generated_at = models.DateTimeField(null=True, blank=True, help_text='When the dynamic description was last generated')
+    
     class Meta:
         ordering = ['-created_at']
         indexes = [

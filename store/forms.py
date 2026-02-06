@@ -4,12 +4,25 @@ from .models import Review
 
 class ReviewForm(forms.ModelForm):
     """Form for submitting product reviews"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default rating to 5 stars if not already set
+        if not self.instance.pk and 'rating' not in self.data:
+            self.fields['rating'].initial = 5
+    
     class Meta:
         model = Review
         fields = ['rating', 'title', 'comment']
         widgets = {
             'rating': forms.Select(
-                choices=[(i, f'{i} Star{"s" if i > 1 else ""}') for i in range(1, 6)],
+                choices=[
+                    (5, '★★★★★'),
+                    (4, '★★★★☆'),
+                    (3, '★★★☆☆'),
+                    (2, '★★☆☆☆'),
+                    (1, '★☆☆☆☆'),
+                ],
                 attrs={'class': 'form-select'}
             ),
             'title': forms.TextInput(attrs={

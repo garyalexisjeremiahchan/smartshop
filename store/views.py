@@ -14,6 +14,8 @@ from .tracking import (
 )
 from .recommendations import get_ai_recommended_products
 from .ai_search import get_ai_search_results, get_autocomplete_suggestions, get_trending_searches
+from .review_summary import generate_review_summary, should_regenerate_summary
+from .dynamic_description import DynamicDescriptionGenerator
 
 
 def home(request):
@@ -117,6 +119,19 @@ def product_detail(request, slug):
     # Track product view
     track_view_product(request, product)
     
+    # Generate or update AI review summary if needed
+    if should_regenerate_summary(product):
+        generate_review_summary(product)
+        # Refresh product instance to get updated summary
+        product.refresh_from_db()
+    
+    # Generate or update dynamic product description if needed
+    description_generator = DynamicDescriptionGenerator()
+    if description_generator.needs_regeneration(product):
+        description_generator.update_product_description(product)
+        # Refresh product instance to get updated description
+        product.refresh_from_db()
+    
     # Check if user has already reviewed this product
     user_review = None
     if request.user.is_authenticated:
@@ -140,11 +155,18 @@ def product_detail(request, slug):
     else:
         form = ReviewForm()
     
+    # Prepare review summary data for template
+    has_summary = (
+        product.review_summary and 
+        reviews.count() >= 3
+    )
+    
     context = {
         'product': product,
         'reviews': reviews,
         'form': form,
         'user_review': user_review,
+        'has_summary': has_summary,
     }
     return render(request, 'store/product_detail.html', context)
 

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load star_ratings %}
 
 {% block title %}
     {% if current_category %}{{ current_category.name }} - SmartShop{% else %}All Products - SmartShop{% endif %}
@@ -120,14 +121,8 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">{{ product.units_sold }} sold</small>
                                         {% if product.average_rating > 0 %}
-                                        <div class="text-warning small">
-                                            {% for i in "12345" %}
-                                                {% if forloop.counter <= product.average_rating %}
-                                                <i class="bi bi-star-fill"></i>
-                                                {% else %}
-                                                <i class="bi bi-star"></i>
-                                                {% endif %}
-                                            {% endfor %}
+                                        <div class="small">
+                                            {% star_rating product.average_rating show_number=True %}
                                         </div>
                                         {% endif %}
                                     </div>
@@ -160,14 +155,8 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">{{ product.units_sold }} sold</small>
                                         {% if product.average_rating > 0 %}
-                                        <div class="text-warning small">
-                                            {% for i in "12345" %}
-                                                {% if forloop.counter <= product.average_rating %}
-                                                <i class="bi bi-star-fill"></i>
-                                                {% else %}
-                                                <i class="bi bi-star"></i>
-                                                {% endif %}
-                                            {% endfor %}
+                                        <div class="small">
+                                            {% star_rating product.average_rating show_number=True %}
                                         </div>
                                         {% endif %}
                                     </div>
