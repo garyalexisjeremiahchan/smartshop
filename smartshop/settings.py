@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Local apps
     'store',
     'accounts',
+    'assistant',
 ]
 
 # Crispy Forms Configuration
@@ -98,6 +99,10 @@ DATABASES = {
         'PORT': config('DB_PORT', default='3306'),
     }
 }
+
+# OpenAI Configuration
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+OPENAI_MODEL = config('OPENAI_MODEL', default='gpt-4o-mini')
 
 
 # Password validation

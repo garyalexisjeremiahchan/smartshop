@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Smooth scroll to top
     const scrollToTop = document.createElement('button');
     scrollToTop.innerHTML = '<i class="bi bi-arrow-up"></i>';
-    scrollToTop.className = 'btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3';
+    scrollToTop.className = 'btn btn-primary rounded-circle position-fixed bottom-0 start-0 m-3';
     scrollToTop.style.cssText = 'width: 50px; height: 50px; display: none; z-index: 1000;';
     document.body.appendChild(scrollToTop);
 

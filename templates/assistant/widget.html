@@ -1,0 +1,125 @@
+{% load static %}
+
+<!-- Shopping Assistant Widget -->
+<div id="assistant-widget">
+    <!-- Floating Action Button -->
+    <button id="assistant-fab" class="assistant-fab" aria-label="Open Shopping Assistant">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="assistant-badge" id="assistant-badge" style="display: none;">1</span>
+    </button>
+
+    <!-- Chat Drawer -->
+    <div id="assistant-drawer" class="assistant-drawer collapsed">
+        <div class="assistant-drawer-content">
+            <!-- Header -->
+            <div class="assistant-header">
+                <div class="assistant-header-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"></path>
+                    </svg>
+                    <h5 class="mb-0">Virtual Shopping Assistant</h5>
+                </div>
+                <button id="assistant-close" class="assistant-close" aria-label="Close Assistant">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Welcome Message (shown on first open) -->
+            <div id="assistant-welcome" class="assistant-welcome" style="display: none;">
+                <div class="text-center py-4">
+                    <div class="assistant-welcome-icon mb-3">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </div>
+                    <h6>Welcome! I'm here to help you shop.</h6>
+                    <p class="text-muted small mb-3">I can help you find products, answer questions, and provide recommendations.</p>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="assistant-messages" class="assistant-messages">
+                <div class="assistant-message assistant-message-assistant">
+                    <div class="assistant-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"></path>
+                        </svg>
+                    </div>
+                    <div class="assistant-message-content">
+                        <p>Hi! I'm your shopping assistant. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="assistant-loading" class="assistant-loading" style="display: none;">
+                <div class="assistant-typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div id="assistant-suggestions" class="assistant-suggestions">
+                {% if request.resolver_match.url_name == 'product_detail' %}
+                <button class="assistant-suggestion-chip" data-message="Tell me about this product">
+                    Tell me about this product
+                </button>
+                <button class="assistant-suggestion-chip" data-message="Is this in stock?">
+                    Check Stock
+                </button>
+                <button class="assistant-suggestion-chip" data-message="Show me similar products">
+                    Similar Products
+                </button>
+                {% else %}
+                <button class="assistant-suggestion-chip" data-message="Show me popular products">
+                    Popular Products
+                </button>
+                <button class="assistant-suggestion-chip" data-message="Show me categories">
+                    Browse Categories
+                </button>
+                <button class="assistant-suggestion-chip" data-message="What's on sale?">
+                    Deals & Sales
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Input Area -->
+            <div class="assistant-input-area">
+                <form id="assistant-form">
+                    <div class="assistant-input-container">
+                        <input 
+                            type="text" 
+                            id="assistant-input" 
+                            class="assistant-input" 
+                            placeholder="Ask me anything..."
+                            autocomplete="off"
+                            maxlength="500"
+                        >
+                        <button type="submit" id="assistant-send" class="assistant-send" aria-label="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay for mobile -->
+<div id="assistant-overlay" class="assistant-overlay"></div>
+
+<!-- Load Assistant CSS and JS -->
+<link rel="stylesheet" href="{% static 'assistant/assistant.css' %}">
+<script src="{% static 'assistant/assistant.js' %}" defer></script>

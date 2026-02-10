@@ -4,6 +4,15 @@
 
 {% block title %}{{ product.name }} - SmartShop{% endblock %}
 
+{% block page_type %}product_detail{% endblock %}
+
+{% block body_attrs %}
+data-page-type="product_detail"
+data-product-id="{{ product.id }}"
+data-category="{{ product.category.slug }}"
+{% if cart %}data-cart-item-count="{{ cart.total_items }}" data-cart-total="{{ cart.total_price }}"{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <nav aria-label="breadcrumb">
