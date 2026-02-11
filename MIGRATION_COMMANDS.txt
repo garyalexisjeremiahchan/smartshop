@@ -1,0 +1,72 @@
+# SmartShop - Migration Commands (Copy & Paste)
+
+Use these commands in Azure Portal Console or Kudu Console.
+
+## Step 1: Navigate to Application Directory
+```bash
+cd /home/site/wwwroot
+```
+
+## Step 2: Upgrade Pip
+```bash
+python -m pip install --upgrade pip
+```
+
+## Step 3: Install Dependencies  
+```bash
+pip install -r requirements.txt
+```
+
+## Step 4: Run Database Migrations
+```bash
+python manage.py migrate
+```
+
+## Step 5: Create Initial Categories
+```bash
+python manage.py populate_categories
+```
+
+## Step 6: Collect Static Files
+```bash
+python manage.py collectstatic --noinput
+```
+
+## Step 7: Create Superuser (Interactive)
+```bash
+python manage.py createsuperuser
+```
+
+When prompted:
+- Username: admin
+- Email: admin@smartshop.com
+- Password: (choose a strong password)
+
+---
+
+## After Running Commands
+
+**Restart App (in PowerShell):**
+```powershell
+az webapp restart --resource-group smartshop-rg --name smartshop-gas-3922
+```
+
+**Test Application:**
+- Website: https://smartshop-gas-3922.azurewebsites.net
+- Admin: https://smartshop-gas-3922.azurewebsites.net/admin/
+
+---
+
+## All Commands at Once (Copy All)
+
+```bash
+cd /home/site/wwwroot
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py populate_categories
+python manage.py collectstatic --noinput
+python manage.py createsuperuser
+```
+
+**Note**: The last command (createsuperuser) is interactive - you'll need to enter username, email, and password when prompted.

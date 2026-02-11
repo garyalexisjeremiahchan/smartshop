@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from decouple import config
 
@@ -26,7 +27,32 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-c%0_-or0zdh(iw+yedhq1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+# Allowed hosts
+# Note: On Azure App Service, internal health checks may use non-public Host headers.
+# Keep localhost/127.0.0.1 and the Azure-provided hostname to avoid 400 Bad Request.
+allowed_hosts_raw = config('ALLOWED_HOSTS', default='').strip()
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(',') if h.strip()]
+
+# Always allow local/in-container routing
+for host in ('localhost', '127.0.0.1'):
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+
+azure_hostname = os.getenv('WEBSITE_HOSTNAME', '').strip()
+if azure_hostname and azure_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(azure_hostname)
+
+# Azure internal health checks may send requests with IP-based Host headers.
+if os.getenv('WEBSITE_SITE_NAME'):
+    for host in ('169.254.131.1',):
+        if host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG and '.azurewebsites.net' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.azurewebsites.net')
 
 
 # Application definition
@@ -54,7 +80,9 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE = [
+    'smartshop.middleware.AzureHealthProbeMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -89,14 +117,26 @@ WSGI_APPLICATION = 'smartshop.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DB_HOST = config('DB_HOST', default='localhost')
+
+DB_OPTIONS = {}
+if os.getenv('WEBSITE_SITE_NAME') and DB_HOST.endswith('.mysql.database.azure.com'):
+    DB_OPTIONS = {
+        'connect_timeout': 10,
+        'ssl': {
+            'ca': '/etc/ssl/certs/ca-certificates.crt',
+        },
+    }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': config('DB_NAME', default='smartshop_db'),
         'USER': config('DB_USER', default='root'),
         'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'HOST': DB_HOST,
+        'PORT': config('DB_PORT', default=3306, cast=int),
+        'OPTIONS': DB_OPTIONS,
     }
 }
 
@@ -139,13 +179,54 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+# Use absolute paths so assets resolve correctly on non-root pages.
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Storage backends (Django 4.2+)
+# - "default" is used for user-uploaded media (ImageField/FileField)
+# - "staticfiles" is used for collected static files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# On Azure, deployments sometimes start without a fresh `collectstatic`, which can
+# make WhiteNoise's manifest storage raise and cause a site-wide 500.
+# Disabling strict manifest mode avoids hard failures and falls back to unhashed names.
+if os.getenv('WEBSITE_SITE_NAME'):
+    WHITENOISE_MANIFEST_STRICT = False
+
+# Basic console logging so tracebacks appear in App Service log stream.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
@@ -161,7 +242,24 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('EMAIL_HOST_USER', default=''))
 
-# OpenAI Configuration (for future AI features)
+"""AI / OpenAI configuration."""
+
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# CSRF trusted origins for Azure
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}" for host in ALLOWED_HOSTS if host not in ['localhost', '127.0.0.1']
+]  # AI features
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 OPENAI_MODEL = config('OPENAI_MODEL', default='gpt-4o-mini')
 

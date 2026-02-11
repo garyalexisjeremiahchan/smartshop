@@ -221,3 +221,12 @@ Thumbs.db
 *.swo
 *~
 .vscode/
+
+# Deployment credentials and sensitive files
+deployment-credentials.txt
+deployment-credentials-FINAL.txt
+deployment-info.txt
+deploy.zip
+.env.azure
+*.env.azure
+*credentials*.txt
